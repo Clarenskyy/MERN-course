@@ -293,6 +293,167 @@ app.use("/workouts", workoutRoutes);
 
 ## MODELS and SCHEMA
 
+1. SCHEMA - like a blueprint or plan. It defines the structure of data you want to store in the database, including the fields and their types (e.g., name is a string, age is a number).
+2. MODEL - like a tool based on the schema. It lets you interact with the database to create, read, update, and delete the data that follows the schema.
+
+### Mongoose
+
+- after setting up a database and connecting it, you will then install `mongoose` in your backend folder
+
+```shell
+npm install mongoose
+```
+
+- this will be use to set up the schemas in each model file
+
+### the `models` folder
+
+- this folder will contain all the models of a data that is being send on the data base
+
+here is an example of a model file with schemas:
+
+```js
+const mongoose = require("mongoose");
+
+const Schema = mongoose.Schema;
+
+const debtorSchema = new Schema(
+  {
+    name: {
+      type: String,
+      required: [true, "Name is required"],
+      trim: true,
+    },
+    contact: {
+      type: String,
+      trim: true,
+    },
+    totalBalance: {
+      type: Number,
+      default: 0,
+    },
+    debts: {
+      type: [Object], // Expecting an array of debt objects
+      default: [],
+    },
+  },
+  { timestamps: true }
+);
+
+module.exports = mongoose.model("Debtor", debtorSchema);
+```
+
+- to understand this better just search for the syntaxes used
+
+you can then used this model to interact with the routes:
+
+```js
+const express = require("express");
+const Debtor = require("../models/debtorModel.js");
+
+const router = express.Router();
+
+// Test route
+router.get("/test", (req, res) => {
+  res.send("Debtor route is working!");
+});
+
+// GET all debtors
+router.get("/", async (req, res) => {
+  try {
+    const debtors = await Debtor.find();
+    res.status(200).json(debtors);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET a single debtor by ID
+router.get("/:id", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const debtor = await Debtor.findById(id);
+    if (!debtor) {
+      return res.status(404).json({ message: "Debtor not found" });
+    }
+    res.status(200).json(debtor);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// CREATE a new debtor
+router.post("/", async (req, res) => {
+  const { name, contact } = req.body;
+
+  if (!name) {
+    return res.status(400).json({ message: "Name is required" });
+  }
+
+  try {
+    const debtor = await Debtor.create({ name, contact });
+    res.status(201).json(debtor);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// UPDATE an existing debtor by ID
+router.put("/:id", async (req, res) => {
+  const { id } = req.params;
+  const { name, contact, totalBalance, debts } = req.body;
+
+  try {
+    const updatedDebtor = await Debtor.findByIdAndUpdate(
+      id,
+      { name, contact, totalBalance, debts },
+      { new: true, runValidators: true } // Return updated doc and validate input
+    );
+    if (!updatedDebtor) {
+      return res.status(404).json({ message: "Debtor not found" });
+    }
+    res.status(200).json(updatedDebtor);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// DELETE a debtor by ID
+router.delete("/:id", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const deletedDebtor = await Debtor.findByIdAndDelete(id);
+    if (!deletedDebtor) {
+      return res.status(404).json({ message: "Debtor not found" });
+    }
+    res.status(200).json(deletedDebtor);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+module.exports = router;
+```
+
+1. **Purpose**: It provides endpoints (URLs) to interact with "debtor" data stored in a database, such as viewing, adding, updating, or deleting debtors.
+
+2. **Key Functions**:
+
+   - **GET `/test`**: Confirms that the debtor routes are working.
+   - **GET `/`**: Fetches a list of all debtors.
+   - **GET `/:id`**: Fetches details of a specific debtor by their ID.
+   - **POST `/`**: Creates a new debtor with data sent in the request body.
+   - **PUT `/:id`**: Updates details of a specific debtor by their ID.
+   - **DELETE `/:id`**: Deletes a specific debtor by their ID.
+
+3. **Error Handling**: Each route handles potential errors, such as invalid IDs, missing data, or database issues, and returns appropriate status codes and error messages.
+
+4. **Database Model**: It uses the `Debtor` model (imported from `../models/debtorModel.js`) to interact with the database for CRUD (Create, Read, Update, Delete) operations.
+
+5. **Export**: The routes are exported as a module so they can be included in the main application.
+
 ## NODE BITS FOR THOSE THAT DOESNT KNOW (ME)
 
 `app.use('/workouts', workoutRoutes);`
